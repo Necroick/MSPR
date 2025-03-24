@@ -1,6 +1,10 @@
 from scrapper_function import createDepcom
 import pandas as pd
 
+# Ouverture des données de 2022 // Renommage de certaines colonnes pour une cohérence entre les datasets
+df_2022 = pd.read_csv('raw_data/donnees_communes_2022.csv', sep=';')
+df_2022.rename(columns={'COM':'DEPCOM', 'REG':'CODREG', 'DEP':'CODDEP', 'PMUN': 'Population municipale', 'PCAP': 'Population comptée à part', 'PTOT': 'Population totale'}, inplace=True)
+
 # Ouverture des données de 2021 // Renommage de certaines colonnes pour une cohérence entre les datasets
 df_2021 = pd.read_csv('raw_data/donnees_communes_2021.csv', sep=';')
 df_2021.rename(columns={'COM':'DEPCOM', 'REG':'CODREG', 'DEP':'CODDEP', 'PMUN': 'Population municipale', 'PCAP': 'Population comptée à part', 'PTOT': 'Population totale'}, inplace=True)
@@ -36,3 +40,4 @@ print(df_2018)
 print(df_2019)
 print(df_2020)
 print(df_2021)
+print(df_2022)
