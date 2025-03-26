@@ -1,4 +1,4 @@
-from scrapper_function import createDepcom, resElectionClean2017, resElectionClean2022
+from scrapper_function import createDepcom, resElectionClean2017
 import pandas as pd
 
 # Ouverture des données de population de 2022 // Renommage de certaines colonnes pour une cohérence entre les datasets
@@ -37,18 +37,24 @@ df_pop_2017 = pd.merge(df_pop_2017, df_pop_2021_subset, on='DEPCOM', how='left')
 # Ouverture des données d'élections de 2017 \\ Traitement de .csv pour avoir un candidat et une commun par ligne
 df_elec_2017 = pd.read_csv('raw_data/resultat_election_2017_burvot.csv', sep=';', encoding='latin-1', header=None)
 df_elec_2017 = resElectionClean2017(df_elec_2017) 
-print(df_elec_2017)
 
-# Ouverture des données d'élections de 2022 \\ Traitement de .csv pour avoir un candidat et une commun par ligne
-df_elec_2022 = pd.read_csv('raw_data/resultat_election_2022_burvot.csv', sep=';', encoding='latin-1', header=None)
-df_elec_2022 = resElectionClean2022(df_elec_2022)
-print(df_elec_2022)
 
-"""
-print(df_pop_2017)
-print(df_pop_2018)
-print(df_pop_2019)
-print(df_pop_2020)
-print(df_pop_2021)
-print(df_pop_2022)
-"""
+# Suppression de valeurs inutiles
+# CORARR et CODCAN dans les df de populations
+df_pop_2017.drop('CODARR', axis=1, inplace=True)
+df_pop_2017.drop('CODCAN', axis=1, inplace=True)
+
+df_pop_2018.drop('CODARR', axis=1, inplace=True)
+df_pop_2018.drop('CODCAN', axis=1, inplace=True)
+
+df_pop_2019.drop('CODARR', axis=1, inplace=True)
+df_pop_2019.drop('CODCAN', axis=1, inplace=True)
+
+df_pop_2020.drop('CODARR', axis=1, inplace=True)
+df_pop_2020.drop('CODCAN', axis=1, inplace=True)
+
+df_pop_2021.drop('CODARR', axis=1, inplace=True)
+df_pop_2021.drop('CODCAN', axis=1, inplace=True)
+
+df_pop_2022.drop('CODARR', axis=1, inplace=True)
+df_pop_2022.drop('CODCAN', axis=1, inplace=True)
