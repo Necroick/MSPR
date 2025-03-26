@@ -39,29 +39,24 @@ df_elec_2017 = pd.read_csv('raw_data/resultat_election_2017_burvot.csv', sep=';'
 df_elec_2017 = resElectionClean2017(df_elec_2017) 
 
 
-# Suppresion de CORARR, CODCAN et CODREG dans les df de populations
-df_pop_2017.drop('CODARR', axis=1, inplace=True)
-df_pop_2017.drop('CODCAN', axis=1, inplace=True)
-df_pop_2017.drop('CODREG', axis=1, inplace=True)
+# Concaténations des différents dataframe de population en ajoutant une colonne 'Année'
+df_pop_2017['Année'] = 17
+df_pop_2018['Année'] = 18
+df_pop_2019['Année'] = 19
+df_pop_2020['Année'] = 20
+df_pop_2021['Année'] = 21
+df_pop_2022['Année'] = 22
+df_pop = pd.concat([df_pop_2017, df_pop_2018, df_pop_2019, df_pop_2020, df_pop_2021, df_pop_2022], ignore_index=True)
 
-df_pop_2018.drop('CODARR', axis=1, inplace=True)
-df_pop_2018.drop('CODCAN', axis=1, inplace=True)
-df_pop_2018.drop('CODREG', axis=1, inplace=True)
+# Suppresion des variables inutiles (CODARR, CODCAN, CODREG, CODCOM)
+df_pop.drop('CODARR', axis=1, inplace=True)
+df_pop.drop('CODCAN', axis=1, inplace=True)
+df_pop.drop('CODREG', axis=1, inplace=True)
+df_pop.drop('CODCOM', axis=1, inplace=True)
 
-df_pop_2019.drop('CODARR', axis=1, inplace=True)
-df_pop_2019.drop('CODCAN', axis=1, inplace=True)
-df_pop_2019.drop('CODREG', axis=1, inplace=True)
+# Suppression de 'Population comptée à part' et 'Population totale', la population comptée à part étant susceptible de voté dans une autre ville
+df_pop.drop('Population comptée à part', axis=1, inplace=True)
+df_pop.drop('Population totale', axis=1, inplace=True)
 
-df_pop_2020.drop('CODARR', axis=1, inplace=True)
-df_pop_2020.drop('CODCAN', axis=1, inplace=True)
-df_pop_2020.drop('CODREG', axis=1, inplace=True)
-
-df_pop_2021.drop('CODARR', axis=1, inplace=True)
-df_pop_2021.drop('CODCAN', axis=1, inplace=True)
-df_pop_2021.drop('CODREG', axis=1, inplace=True)
-
-df_pop_2022.drop('CODARR', axis=1, inplace=True)
-df_pop_2022.drop('CODCAN', axis=1, inplace=True)
-df_pop_2022.drop('CODREG', axis=1, inplace=True)
-
-print(df_pop_2017.columns)
+df_pop.rename(columns={'Population municipale': 'Population', 'DEPCOM':'Code Commune', 'Commune':'Nom Commune', 'CODDEP':'Code Departement'}, inplace=True)
+df_pop.to_csv('final_data\\data_population.csv', index=False)
