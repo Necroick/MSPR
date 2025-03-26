@@ -39,22 +39,29 @@ df_elec_2017 = pd.read_csv('raw_data/resultat_election_2017_burvot.csv', sep=';'
 df_elec_2017 = resElectionClean2017(df_elec_2017) 
 
 
-# Suppression de valeurs inutiles
-# CORARR et CODCAN dans les df de populations
+# Suppresion de CORARR, CODCAN et CODREG dans les df de populations
 df_pop_2017.drop('CODARR', axis=1, inplace=True)
 df_pop_2017.drop('CODCAN', axis=1, inplace=True)
+df_pop_2017.drop('CODREG', axis=1, inplace=True)
 
 df_pop_2018.drop('CODARR', axis=1, inplace=True)
 df_pop_2018.drop('CODCAN', axis=1, inplace=True)
+df_pop_2018.drop('CODREG', axis=1, inplace=True)
 
 df_pop_2019.drop('CODARR', axis=1, inplace=True)
 df_pop_2019.drop('CODCAN', axis=1, inplace=True)
+df_pop_2019.drop('CODREG', axis=1, inplace=True)
 
 df_pop_2020.drop('CODARR', axis=1, inplace=True)
 df_pop_2020.drop('CODCAN', axis=1, inplace=True)
+df_pop_2020.drop('CODREG', axis=1, inplace=True)
 
 df_pop_2021.drop('CODARR', axis=1, inplace=True)
 df_pop_2021.drop('CODCAN', axis=1, inplace=True)
+df_pop_2021.drop('CODREG', axis=1, inplace=True)
 
 df_pop_2022.drop('CODARR', axis=1, inplace=True)
 df_pop_2022.drop('CODCAN', axis=1, inplace=True)
+df_pop_2022.drop('CODREG', axis=1, inplace=True)
+
+print(df_pop_2017.columns)
