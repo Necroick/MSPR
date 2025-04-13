@@ -1,4 +1,4 @@
-from scrapper_function import createDepcom, resElectionClean2017, resElectionClean2022
+from scrapper_function import createDepcom, createCodeCommune, resElectionClean2017, resElectionClean2022
 import pandas as pd
 
 # Ouverture des données de population de 2022 // Renommage de certaines colonnes pour une cohérence entre les datasets
@@ -37,15 +37,13 @@ df_pop_2017 = pd.merge(df_pop_2017, df_pop_2021_subset, on='DEPCOM', how='left')
 # Ouverture des données d'élections de 2017 \\ Traitement de .csv pour garder le gagnant de chaque ville
 df_elec_2017 = pd.read_csv('raw_data/resultat_election_2017_burvot.csv', sep=';', encoding='latin-1', header=None)
 df_elec_2017 = resElectionClean2017(df_elec_2017)
-df_elec_2017['Année'] = 17
 
 # Ouverture des données d'élections de 2022 \\ Traitement de .csv pour garder le gagnant de chaque ville
 df_elec_2022 = pd.read_csv('raw_data/resultat_election_2022_burvot.csv', sep=';', encoding='latin-1', header=None)
 df_elec_2022 = resElectionClean2022(df_elec_2022)
-df_elec_2022['Année'] = 22
 
 
-# Concaténations des différents dataframe de population en ajoutant une colonne 'Année'
+# Concaténations des différents dataframe de population en ajoutant une colonne 'Année' // population
 df_pop_2017['Année'] = 17
 df_pop_2018['Année'] = 18
 df_pop_2019['Année'] = 19
@@ -54,11 +52,25 @@ df_pop_2021['Année'] = 21
 df_pop_2022['Année'] = 22
 df_pop = pd.concat([df_pop_2017, df_pop_2018, df_pop_2019, df_pop_2020, df_pop_2021, df_pop_2022], ignore_index=True)
 
+# Concaténations des différents dataframe de population en ajoutant une colonne 'Année' // election
+df_elec_2017['Année'] = 17
+df_elec_2022['Année'] = 22
+df_elec = pd.concat([df_elec_2017, df_elec_2022], ignore_index=True)
+
+# Création de la colonne 'Code Commune'
+df_elec = createCodeCommune(df_elec)
+
 # Suppresion des variables inutiles (CODARR, CODCAN, CODREG, CODCOM)
 df_pop.drop('CODARR', axis=1, inplace=True)
 df_pop.drop('CODCAN', axis=1, inplace=True)
 df_pop.drop('CODREG', axis=1, inplace=True)
 df_pop.drop('CODCOM', axis=1, inplace=True)
+
+# Suppresion des variables inutiles (Code du département, Libellé du département, Code de la commune, Libellé de la commune)
+df_elec.drop('Code du département', axis=1, inplace=True)
+df_elec.drop('Libellé du département', axis=1, inplace=True)
+df_elec.drop('Code de la commune', axis=1, inplace=True)
+df_elec.drop('Libellé de la commune', axis=1, inplace=True)
 
 # Suppression de 'Population comptée à part' et 'Population totale', la population comptée à part étant susceptible de voté dans une autre ville
 df_pop.drop('Population comptée à part', axis=1, inplace=True)
@@ -66,3 +78,5 @@ df_pop.drop('Population totale', axis=1, inplace=True)
 
 df_pop.rename(columns={'Population municipale': 'Population', 'DEPCOM':'Code Commune', 'Commune':'Nom Commune', 'CODDEP':'Code Departement'}, inplace=True)
 df_pop.to_csv('final_data\\data_population.csv', index=False)
+df_elec.rename(columns={'Exprimés': 'Nb_Votant'}, inplace=True)
+df_elec.to_csv('final_data\\data_election.csv', index=False)
