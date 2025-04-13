@@ -8,3 +8,5 @@ criminality/cleaned_criminal_data.csv
 criminality/info-complements.xlsx
 
 criminality/not_cleaned_criminal_data.csv
+
+__pycache__
