@@ -1,4 +1,4 @@
-from scrapper_function import createDepcom, resElectionClean2017
+from scrapper_function import createDepcom, resElectionClean2017, resElectionClean2022
 import pandas as pd
 
 # Ouverture des données de population de 2022 // Renommage de certaines colonnes pour une cohérence entre les datasets
@@ -34,9 +34,15 @@ df_pop_2017['CODCOM'] = df_pop_2017['DEPCOM'].str[2:]
 df_pop_2021_subset = df_pop_2021[['DEPCOM', 'CODREG', 'Région', 'CODARR', 'CODCAN']]
 df_pop_2017 = pd.merge(df_pop_2017, df_pop_2021_subset, on='DEPCOM', how='left')
 
-# Ouverture des données d'élections de 2017 \\ Traitement de .csv pour avoir un candidat et une commun par ligne
+# Ouverture des données d'élections de 2017 \\ Traitement de .csv pour garder le gagnant de chaque ville
 df_elec_2017 = pd.read_csv('raw_data/resultat_election_2017_burvot.csv', sep=';', encoding='latin-1', header=None)
-df_elec_2017 = resElectionClean2017(df_elec_2017) 
+df_elec_2017 = resElectionClean2017(df_elec_2017)
+df_elec_2017['Année'] = 17
+
+# Ouverture des données d'élections de 2022 \\ Traitement de .csv pour garder le gagnant de chaque ville
+df_elec_2022 = pd.read_csv('raw_data/resultat_election_2022_burvot.csv', sep=';', encoding='latin-1', header=None)
+df_elec_2022 = resElectionClean2022(df_elec_2022)
+df_elec_2022['Année'] = 22
 
 
 # Concaténations des différents dataframe de population en ajoutant une colonne 'Année'
