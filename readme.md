@@ -16,3 +16,6 @@ Accuracy avec 200 arbres : 0.6487
 Accuracy avec 250 arbres : 0.6518
 Accuracy avec 300 arbres : 0.6517
 On a donc choisi 125 arbres, qui semble être le plateau
+
+## Estimation des données pour 2027 en Auvergne-Rhône-Alpes
+Estimation des données socio-économiques pour 2027 par extrapolation

@@ -104,7 +104,7 @@ print("Préprocessing terminé.")
 print(f"NaNs dans X_train_processed: {np.isnan(X_train_processed).sum()}")
 print(f"NaNs dans X_test_processed: {np.isnan(X_test_processed).sum()}")
 
-### ENTRAINEMENT DES MODELES ###
+### ENTRAINEMENT DU MODELE - Random Forest ###
 
 # Définition du modèle - Random Forest
 model = RandomForestClassifier(n_estimators=125,
@@ -122,3 +122,114 @@ print("Prédiction et évaluation...")
 y_pred = model.predict(X_test_processed)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"\nAccuracy: {accuracy:.4f}")
+
+### EXTRAPOLATION DES DONNEES POUR 2027 EN AUVERGNE RHONES ALPES ###
+
+# Identification des communes de la région cible
+annee_prediction = 27
+target_region = 'Auvergne-Rhône-Alpes'
+df_aura_2022 = df_election_base[df_election_base['Région'] == target_region].copy()
+print(f"Prédiction pour {len(df_aura_2022)} communes en {target_region}.")
+codes_communes_aura = df_aura_2022['Code Commune'].unique()
+
+# Init. du dataframe contenant les estimations pour 2027
+df_estimations_2027 = df_aura_2022[['Code Commune', 'Nom Commune', 'Région', 'Code Departement']].copy()
+df_estimations_2027 = df_estimations_2027.set_index('Code Commune') 
+
+# Sélectionner l'historique uniquement pour les communes AURA
+df_historique_aura = df[df['Code Commune'].isin(codes_communes_aura)].copy()
+variables_a_extrapoler = variables_communales_a_traiter + variables_nationales_regionales
+
+# Estimation des données socio-économiques pour 2027 par extrapolation
+print("Estimation des données socio-économiques pour 2027 par extrapolation...")
+for var in variables_a_extrapoler:
+    print(f"  Extrapolation pour : {var}")
+    estimations_var = {}
+
+    for code_commune in codes_communes_aura:
+        serie_commune = df_historique_aura[df_historique_aura['Code Commune'] == code_commune][['Année', var]].dropna().sort_values('Année')
+
+        if len(serie_commune) >= 2:
+            coeffs = np.polyfit(serie_commune['Année'], serie_commune[var], 1)
+            valeur_estimee = np.polyval(coeffs, annee_prediction)
+
+            if var in ['Population', 'Inscrits', 'Nb_Votant']:
+                valeur_estimee = max(0, round(valeur_estimee))
+            elif var == 'Taux de chômage':
+                 valeur_estimee = max(0, min(100, valeur_estimee))
+            elif var == 'Nb Faits Divers':
+                valeur_estimee = max(0, round(valeur_estimee))
+            estimations_var[code_commune] = valeur_estimee
+
+        elif len(serie_commune) == 1:
+            estimations_var[code_commune] = serie_commune[var].iloc[0]
+        else:
+            estimations_var[code_commune] = 0
+
+    # Ajouter la colonne estimée pour 2027
+    df_estimations_2027[var] = pd.Series(estimations_var)
+
+print("Extrapolation terminée.")
+df_estimations_2027 = df_estimations_2027.reset_index()
+
+# Init. du dataframe pour le calcul les différences 2027 vs 2022
+print("Calcul des différences 2027 vs 2022...")
+df_predict_2027 = df_estimations_2027.copy()
+df_predict_2027 = df_predict_2027.merge(
+    df_aura_2022[['Code Commune'] + variables_a_extrapoler],
+    on='Code Commune',
+    suffixes=('_2027', '_2022')
+)
+
+# Calcul et ajout des nouvelles colonnes de différence (_Diff_27_22)
+nouvelles_features_diff_27_22 = {}
+for var in variables_a_extrapoler:
+    col_diff_name_27_22 = f'{var}_Diff_{annee_prediction}_{annee_recente}'
+    df_predict_2027[col_diff_name_27_22] = df_predict_2027[f'{var}_2027'] - df_predict_2027[f'{var}_2022']
+    nouvelles_features_diff_27_22[var] = col_diff_name_27_22
+
+# Recréer les listes de colonnes mais avec les noms _Diff_27_22
+cols_communales_2027 = variables_communales_a_traiter
+cols_diff_communales_27_22 = [nouvelles_features_diff_27_22[var] for var in variables_communales_a_traiter if var in nouvelles_features_diff_27_22]
+cols_diff_national_27_22 = [nouvelles_features_diff_27_22[var] for var in variables_nationales_regionales if var in nouvelles_features_diff_27_22]
+
+# Mapper les noms _Diff_22_17 aux noms _Diff_27_22
+map_diff_names = {nouvelles_features_diff_all[k]: nouvelles_features_diff_27_22[k] for k in nouvelles_features_diff_all if k in nouvelles_features_diff_27_22}
+final_feature_list_2027 = []
+for col in features_for_X:
+    if col in variables_communales_a_traiter:
+        final_feature_list_2027.append(f'{col}_2027')
+    elif col in map_diff_names:
+        final_feature_list_2027.append(map_diff_names[col])
+    elif col in cols_diff_national_passthrough:
+        if col in map_diff_names:
+            final_feature_list_2027.append(map_diff_names[col])
+        else:
+            print(f"Attention: Colonne {col} attendue mais non trouvée dans map_diff_names")
+    elif col in categorical_features:
+        final_feature_list_2027.append(col)
+    else:
+        print(f"Attention: Colonne {col} non reconnue lors de la construction de X_2027")
+
+# Créer X_2027_aura avec les bonnes colonnes renommées et dans le bon ordre
+X_2027_aura_raw = df_predict_2027.copy()
+rename_map_2027 = {f'{col}_2027': col for col in variables_communales_a_traiter}
+X_2027_aura_raw.rename(columns=rename_map_2027, inplace=True)
+
+# Renommer les colonnes _Diff_27_22 en _Diff_22_17
+rename_map_diff = {v: k for k, v in map_diff_names.items()}
+X_2027_aura_raw.rename(columns=rename_map_diff, inplace=True)
+
+
+# Sélectionner uniquement les colonnes nécessaires dans le bon ordre
+try:
+    X_2027_aura = X_2027_aura_raw[features_for_X]
+except KeyError as e:
+    print(f"Erreur de clé lors de la sélection des colonnes pour X_2027_aura: {e}")
+    print("Colonnes attendues:", features_for_X)
+    print("Colonnes disponibles:", X_2027_aura_raw.columns.tolist())
+    exit()
+    
+# Appliquer le Préprocesseur
+print("Application du préprocesseur aux données 2027...")
+X_2027_aura_processed = preprocessor.transform(X_2027_aura)
