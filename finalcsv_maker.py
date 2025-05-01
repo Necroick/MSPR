@@ -43,6 +43,15 @@ df_final = pd.merge(
     how='left'
 )
 
+
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('Jean-Luc Mï¿½LENCHON', 'Jean-Luc MELENCHON', regex=False)
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('Franï¿½ois FILLON', 'Francois FILLON', regex=False)
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('Benoï¿½t HAMON', 'Benoit HAMON', regex=False)
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('Franï¿½ois ASSELINEAU', 'Francois ASSELINEAU', regex=False)
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('ï¿½ric ZEMMOUR', 'Eric ZEMMOUR', regex=False)
+df_final['Nom_Prenom_Gagnant'] = df_final['Nom_Prenom_Gagnant'].str.replace('Valï¿½rie Pï¿½CRESSE', 'Valerie PECRESSE', regex=False)
+
+
 print(df_final.head())
 
 df_final.to_csv('final_data.csv', index=False)
