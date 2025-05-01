@@ -233,3 +233,20 @@ except KeyError as e:
 # Appliquer le Préprocesseur
 print("Application du préprocesseur aux données 2027...")
 X_2027_aura_processed = preprocessor.transform(X_2027_aura)
+
+### PREDICTION DES RESULTATS POUR 2027 EN AUVERGNE RHONES ALPES ###
+
+print("Prédiction pour 2027...")
+predictions_2027_encoded = model.predict(X_2027_aura_processed)
+predictions_2027_noms = label_encoder.inverse_transform(predictions_2027_encoded)
+
+# Créer un DataFrame de résultats
+df_results_2027 = df_predict_2027[['Code Commune', 'Nom Commune']].copy()
+df_results_2027['Gagnant_Predit_2027'] = predictions_2027_noms
+print("\n--- Prédictions (Spéculatives) pour Auvergne-Rhône-Alpes en 2027 ---")
+print(df_results_2027.head(20))
+
+# Afficher la répartition
+print("\nRépartition des communes prédites par candidat en AURA (2027):")
+print(df_results_2027['Gagnant_Predit_2027'].value_counts())
+#df_results_2027.to_csv('predictions_aura_2027_randomtree.csv', index=False)

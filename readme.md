@@ -19,3 +19,5 @@ On a donc choisi 125 arbres, qui semble être le plateau
 
 ## Estimation des données pour 2027 en Auvergne-Rhône-Alpes
 Estimation des données socio-économiques pour 2027 par extrapolation
+
+## Prédiction des résultats pour 2027 en Auvergne-Rhône-Alpes - Random Forest
