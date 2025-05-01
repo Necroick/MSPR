@@ -1,4 +1,9 @@
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+
 df = pd.read_csv('final_data.csv')
 
 ### TRAITEMENT DES DONNES SOCIO-ECONOMIQUES ###
@@ -50,3 +55,28 @@ for var in variables_a_suivre:
 # Gérer les NaN introduits par le merge ou les calculs de différence
 fill_values = {col: 0 for col in nouvelles_features_diff if col in df_election_base.columns}
 df_election_base.fillna(value=fill_values, inplace=True)
+
+### CREATION DES ENSEMBLES D'ENTRAINEMENT ###
+
+# Encodage de la cible (y)
+label_encoder = LabelEncoder()
+df_election_base = df_election_base.dropna(subset=['Nom_Prenom_Gagnant']) 
+y = label_encoder.fit_transform(df_election_base['Nom_Prenom_Gagnant'])
+# On garde le mapping de côté pour l'interprétation future
+gagnant_mapping = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
+
+# Encodage des features (x), pour que chaque région soit traîtée séparement
+categorical_features = ['Région', 'Code Departement']
+X = df_election_base[variables_a_suivre + categorical_features].copy()
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), variables_a_suivre),                          # Mise à l'échelle des numériques
+        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)   # Encodage des catégorielles
+    ],
+    remainder='passthrough'
+)
+
+# Séparer les données en ensemble d'entrainement et leur appliqué l'encodage
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train_processed = preprocessor.fit_transform(X_train)
+X_test_processed = preprocessor.transform(X_test)
