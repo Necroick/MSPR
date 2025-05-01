@@ -1,0 +1,2 @@
+# Traitement des donnée socio-économiques
+Création de variable 'Diff' expirmant l'évolution des données, afin d'expirmer plus explicitement l'évolution des situations sociales (plutôt que les situations sociales elle-même)
