@@ -3,11 +3,13 @@ import seaborn as sns
 import numpy as np
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score
+from collections import Counter
 
 df = pd.read_csv('final_data.csv')
 
@@ -83,13 +85,22 @@ numeric_pipeline = Pipeline(steps=[
     ('scaler', StandardScaler())
 ])
 
-# Définiton du processus d'encodage de X
+# Identifier les colonnes qui seront effectivement traitées par chaque transformateur
+cols_num_in_X = [col for col in cols_communales_num_impute_scale if col in X.columns]
+cols_cat_in_X = [col for col in categorical_features if col in X.columns]
+
+# Identifier les colonnes restantes (celles qui étaient en passthrough)
+processed_cols = cols_num_in_X + cols_cat_in_X
+remainder_cols = [col for col in features_for_X if col not in processed_cols]
+
+# Définition du processus d'encodage de X - en imputant aussi le reste
 preprocessor = ColumnTransformer(
     transformers=[
-        ('num_communal', numeric_pipeline, cols_communales_num_impute_scale),   # Appliquer Imputer+Scaler aux colonnes communales (base + diff)
-        ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), categorical_features)  # OneHotEncoder les catégorielles
+        ('num_communal', numeric_pipeline, cols_num_in_X),
+        ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cols_cat_in_X),
+        ('remainder_impute', SimpleImputer(strategy='median'), remainder_cols)
     ],
-    remainder='passthrough' # Les colonnes non listées (cols_diff_national_passthrough) passeront ici
+    remainder='drop'
 )
 
 
@@ -101,9 +112,6 @@ X_train_processed = preprocessor.fit_transform(X_train)
 X_test_processed = preprocessor.transform(X_test)
 print("Préprocessing terminé.")
 
-print(f"NaNs dans X_train_processed: {np.isnan(X_train_processed).sum()}")
-print(f"NaNs dans X_test_processed: {np.isnan(X_test_processed).sum()}")
-
 ### ENTRAINEMENT DU MODELE - Random Forest ###
 
 # Définition du modèle - Random Forest
@@ -113,15 +121,66 @@ model = RandomForestClassifier(n_estimators=125,
                                n_jobs=-1)
 
 # Entrainement du modèle - Random Forest
-print("Entraînement du modèle RandomForest...")
+print("Entraînement du modèle Random Forest...")
 model.fit(X_train_processed, y_train)
 print("Entraînement terminé.")
 
 # Test du model et calcul de l'accuracy - Random Forest
-print("Prédiction et évaluation...")
+print("Prédiction et évaluation du modèle RandomForest...")
 y_pred = model.predict(X_test_processed)
 accuracy = accuracy_score(y_test, y_pred)
-print(f"\nAccuracy: {accuracy:.4f}")
+print(f"\nAccuracy: (Random Forest): {accuracy:.4f}")
+
+# Définition du modèle - Gradient Boosting
+model_gb = GradientBoostingClassifier(n_estimators=100,
+                                     learning_rate=0.1,
+                                     max_depth=3,
+                                     random_state=42)
+
+# Entrainement du modèle - Gradient Boosting
+print("Entraînement Gradient Boosting...")
+model_gb.fit(X_train_processed, y_train)
+print("Entraînement terminé.")
+
+# Test du model et calcul de l'accuracy - Gradient Boosting
+print("Prédiction et évaluation (Gradient Boosting)...")
+y_pred_gb = model_gb.predict(X_test_processed)
+accuracy_gb = accuracy_score(y_test, y_pred_gb)
+print(f"Accuracy (Gradient Boosting): {accuracy_gb:.4f}")
+
+# Définition du modèle - KMeans
+n_cluster = 250
+model_kmeans = KMeans(n_clusters=n_cluster,
+                      random_state=42,
+                      n_init=10)
+
+# Entrainement du modèle - KMeans
+print("Entraînement K-Means (fit sur X_train_processed)...")
+model_kmeans.fit(X_train_processed)
+print("K-Means entraîné.")
+
+cluster_labels_train = model_kmeans.labels_
+cluster_winner_map = {}
+for i in range(n_cluster):
+    indices_in_cluster = np.where(cluster_labels_train == i)[0]
+    if len(indices_in_cluster) > 0:
+        winners_in_cluster = y_train[indices_in_cluster]
+        most_common_winner_encoded = Counter(winners_in_cluster).most_common(1)[0][0]
+        cluster_winner_map[i] = most_common_winner_encoded
+        winner_name = label_encoder.inverse_transform([most_common_winner_encoded])[0]
+        print(f"  Cluster {i}: Gagnant majoritaire = {winner_name} ({len(indices_in_cluster)} communes)")
+    else:
+        print(f"  Cluster {i}: Vide (aucune commune d'entraînement)")
+        most_common_global = Counter(y_train).most_common(1)[0][0]
+        cluster_winner_map[i] = most_common_global
+
+# Test du model et calcul de l'accuracy - KMeans
+print("Prédiction et évaluation (KMeans)...")
+cluster_labels_test = model_kmeans.predict(X_test_processed)
+y_pred_kmeans_mapped = np.array([cluster_winner_map.get(label, -1) for label in cluster_labels_test]) # -1 si label inconnu
+valid_preds_mask = y_pred_kmeans_mapped != -1
+accuracy_kmeans = accuracy_score(y_test[valid_preds_mask], y_pred_kmeans_mapped[valid_preds_mask])
+print(f"Accuracy (K-Means via mapping): {accuracy_kmeans:.4f}")
 
 ### EXTRAPOLATION DES DONNEES POUR 2027 EN AUVERGNE RHONES ALPES ###
 
@@ -236,17 +295,39 @@ X_2027_aura_processed = preprocessor.transform(X_2027_aura)
 
 ### PREDICTION DES RESULTATS POUR 2027 EN AUVERGNE RHONES ALPES ###
 
-print("Prédiction pour 2027...")
-predictions_2027_encoded = model.predict(X_2027_aura_processed)
-predictions_2027_noms = label_encoder.inverse_transform(predictions_2027_encoded)
+# Prédiction modèle - Random Forest
+print("Prédiction pour 2027 (Random Forest)...")
+predictions_2027_encoded_rf = model.predict(X_2027_aura_processed)
+predictions_2027_noms_rf = label_encoder.inverse_transform(predictions_2027_encoded_rf)
+
+# Prédiction modèle - Gradient Boosting
+print("Prédiction avec Gradient Boosting...")
+predictions_2027_encoded_gb = model_gb.predict(X_2027_aura_processed)
+predictions_2027_noms_gb = label_encoder.inverse_transform(predictions_2027_encoded_gb)
+
+# Prédiction modèle - KMeans
+print("Assignation aux clusters K-Means et mapping vers gagnant...")
+clusters_2027 = model_kmeans.predict(X_2027_aura_processed)
+predictions_2027_encoded_kmeans = np.array([cluster_winner_map.get(label, -1) for label in clusters_2027])
+valid_kmeans_preds_mask = predictions_2027_encoded_kmeans != -1
+predictions_2027_noms_kmeans = np.full(predictions_2027_encoded_kmeans.shape, "Mapping_Inconnu", dtype=object)
+if np.any(valid_kmeans_preds_mask): # S'il y a au moins une prédiction valide
+    predictions_2027_noms_kmeans[valid_kmeans_preds_mask] = label_encoder.inverse_transform(
+        predictions_2027_encoded_kmeans[valid_kmeans_preds_mask]
+    )
 
 # Créer un DataFrame de résultats
 df_results_2027 = df_predict_2027[['Code Commune', 'Nom Commune']].copy()
-df_results_2027['Gagnant_Predit_2027'] = predictions_2027_noms
-print("\n--- Prédictions (Spéculatives) pour Auvergne-Rhône-Alpes en 2027 ---")
-print(df_results_2027.head(20))
+df_results_2027['Gagnant_Predit_2027_RF'] = predictions_2027_noms_rf
+df_results_2027['Gagnant_Predit_2027_GB'] = predictions_2027_noms_gb
+df_results_2027['Gagnant_Predit_2027_KM'] = predictions_2027_noms_kmeans
+
 
 # Afficher la répartition
-print("\nRépartition des communes prédites par candidat en AURA (2027):")
-print(df_results_2027['Gagnant_Predit_2027'].value_counts())
-#df_results_2027.to_csv('predictions_aura_2027_randomtree.csv', index=False)
+print("\nRépartition des communes prédites par candidat en AURA en 2017 (Random Forest):")
+print(df_results_2027['Gagnant_Predit_2027_RF'].value_counts())
+print("\nRépartition des communes prédites par candidat en AURA en 2017 (Gradient Boosting):")
+print(df_results_2027['Gagnant_Predit_2027_GB'].value_counts())
+print("\nRépartition des communes prédites par candidat en AURA en 2017 (KMeans):")
+print(df_results_2027['Gagnant_Predit_2027_KM'].value_counts())
+df_results_2027.to_csv('predictions_aura_2027.csv', index=False)
