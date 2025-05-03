@@ -322,8 +322,12 @@ df_results_2027['Gagnant_Predit_2027_RF'] = predictions_2027_noms_rf
 df_results_2027['Gagnant_Predit_2027_GB'] = predictions_2027_noms_gb
 df_results_2027['Gagnant_Predit_2027_KM'] = predictions_2027_noms_kmeans
 
+# Ajout du nombre de votant
+votes_2027_df = df_predict_2027[['Code Commune', 'Nb_Votant_2027']].copy()
+df_results_2027 = pd.merge(df_results_2027, votes_2027_df, on='Code Commune', how='left')
+df_results_2027['Nb_Votant_2027'] = df_results_2027['Nb_Votant_2027'].fillna(0).astype(int)
 
-# Afficher la répartition
+# Afficher la répartition (nb de commune)
 print("\nRépartition des communes prédites par candidat en AURA en 2017 (Random Forest):")
 print(df_results_2027['Gagnant_Predit_2027_RF'].value_counts())
 print("\nRépartition des communes prédites par candidat en AURA en 2017 (Gradient Boosting):")
@@ -331,3 +335,19 @@ print(df_results_2027['Gagnant_Predit_2027_GB'].value_counts())
 print("\nRépartition des communes prédites par candidat en AURA en 2017 (KMeans):")
 print(df_results_2027['Gagnant_Predit_2027_KM'].value_counts())
 df_results_2027.to_csv('predictions_aura_2027.csv', index=False)
+
+# Calcul et affichage du gagnant pour Random Forest
+print("\nTotal des votes prédits par candidat en AURA en 2027 (Random Forest):")
+votes_rf = df_results_2027.groupby('Gagnant_Predit_2027_RF')['Nb_Votant_2027'].sum().sort_values(ascending=False)
+print(votes_rf)
+
+# Calcul et affichage du gagnant pour Gradient Boosting
+print("\nTotal des votes prédits par candidat en AURA en 2027 (Gradient Boosting):")
+votes_gb = df_results_2027.groupby('Gagnant_Predit_2027_GB')['Nb_Votant_2027'].sum().sort_values(ascending=False)
+print(votes_gb)
+
+# Calcul et affichage du gagnant pour KMeans
+print("\nTotal des votes prédits par candidat en AURA en 2027 (KMeans):")
+# Exclure les 'Mapping_Inconnu' du calcul si nécessaire
+votes_km = df_results_2027[df_results_2027['Gagnant_Predit_2027_KM'] != "Mapping_Inconnu"].groupby('Gagnant_Predit_2027_KM')['Nb_Votant_2027'].sum().sort_values(ascending=False)
+print(votes_km)
