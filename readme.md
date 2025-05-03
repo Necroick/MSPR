@@ -70,13 +70,13 @@ Jean LASSALLE            2
 Nathalie ARTHAUD         2
 
 Nb de vote :
-Emmanuel MACRON       2054594
-Marine LE PEN         1292182
-Jean-Luc MELENCHON     661339
-Jean LASSALLE             143
-Valerie PECRESSE          101
-Eric ZEMMOUR               30
-Yannick JADOT              13
+Emmanuel MACRON       2323259
+Marine LE PEN         1184094
+Jean-Luc MELENCHON     500246
+Valerie PECRESSE          417
+Eric ZEMMOUR              219
+Jean LASSALLE              92
+Fabien ROUSSEL             75
 Nathalie ARTHAUD            0
 
 ## Prédiction des résultats pour 2027 en Auvergne-Rhône-Alpes - K-Means
