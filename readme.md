@@ -31,6 +31,8 @@ Accuracy pour 15 cluster : 0.5861
 Accuracy pour 20 cluster : 0.5839
 Accuracy pour 50 cluster : 0.6109
 Accuracy pour 100 cluster : 0.6439
+Accuracy pour 150 cluster : 0.6482
+Accuracy pour 200 cluster : 0.6535
 Accuracy pour 250 cluster : 0.6541
 Augmenter le nombre de cluster semble augmenter l'accuraccy de manière exponentielle, on a donc choisis 250 cluster qui parraissait un bon compromis entre précision et temps de calcul
 
